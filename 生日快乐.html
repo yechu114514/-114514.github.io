@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>生日快乐</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
+            overflow: hidden;
+            touch-action: manipulation;
+            font-family: -apple-system, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            text-align: center;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .name-display {
+            font-size: 3rem;
+            color: #fff;
+            text-shadow: 3px 3px 0 #ff4757;
+            margin: 20px 0;
+            animation: glow 2s infinite alternate;
+            background: rgba(255,255,255,0.2);
+            padding: 10px 20px;
+            border-radius: 15px;
+            display: inline-block;
+        }
+
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #ff4757, 0 0 20px #ff4757;
+            }
+            to {
+                text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #ff4757, 0 0 40px #ff4757;
+            }
+        }
+
+        .hearts {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .heart {
+            position: absolute;
+            color: #ff9f9f;
+            animation: float 6s linear infinite;
+            font-size: 24px;
+        }
+
+        .balloon {
+            position: absolute;
+            font-size: 30px;
+            animation: float 8s ease-in infinite;
+        }
+
+        .confetti {
+            position: absolute;
+            font-size: 20px;
+            animation: confettiFall 5s linear infinite;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        @keyframes confettiFall {
+            0% {
+                transform: translateY(-100px) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .wx-button {
+            padding: 12px 30px;
+            font-size: 1.2rem;
+            background: #fff;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin: 10px;
+            font-weight: bold;
+        }
+
+        .wx-button:active {
+            transform: scale(0.95);
+        }
+
+        .cake {
+            font-size: 80px;
+            display: inline-block;
+            animation: pulse 1.5s infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .message {
+            color: white;
+            font-size: 1.2rem;
+            margin: 15px 0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="hearts" id="hearts"></div>
+    <div class="container">
+        <div class="cake">🎂</div>
+        <div class="message">送给最特别的你</div>
+        <div class="name-display">张喜临</div> <!-- 这里直接写名字 -->
+        
+        <button class="wx-button" onclick="addHearts()">发送爱心 ❤️</button>
+        <button class="wx-button" onclick="addConfetti()">撒花庆祝 🎉</button>
+    </div>
+
+    <script>
+        // 创建爱心
+        function createHeart() {
+            const heart = document.createElement('div');
+            heart.className = 'heart';
+            heart.innerHTML = '❤';
+            heart.style.left = Math.random() * 100 + '%';
+            heart.style.animationDuration = Math.random() * 3 + 3 + 's';
+            heart.style.fontSize = Math.random() * 10 + 20 + 'px';
+            document.getElementById('hearts').appendChild(heart);
+            setTimeout(() => heart.remove(), 6000);
+        }
+
+        // 创建气球
+        function createBalloon() {
+            const balloon = document.createElement('div');
+            balloon.className = 'balloon';
+            balloon.innerHTML = ['🎈', '🎉', '✨', '🎊', '🎁'][Math.floor(Math.random() * 5)];
+            balloon.style.left = Math.random() * 100 + '%';
+            balloon.style.animationDuration = Math.random() * 4 + 4 + 's';
+            balloon.style.fontSize = Math.random() * 20 + 30 + 'px';
+            document.getElementById('hearts').appendChild(balloon);
+            setTimeout(() => balloon.remove(), 8000);
+        }
+
+        // 创建彩带
+        function createConfetti() {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.innerHTML = ['✨', '🌟', '💫', '🎀', '🎄'][Math.floor(Math.random() * 5)];
+            confetti.style.left = Math.random() * 100 + '%';
+            confetti.style.animationDuration = Math.random() * 3 + 2 + 's';
+            confetti.style.fontSize = Math.random() * 15 + 15 + 'px';
+            confetti.style.animationDelay = Math.random() * 2 + 's';
+            document.getElementById('hearts').appendChild(confetti);
+            setTimeout(() => confetti.remove(), 5000);
+        }
+
+        // 批量生成爱心
+        function addHearts() {
+            for(let i = 0; i < 15; i++) {
+                setTimeout(createHeart, i * 50);
+            }
+        }
+
+        // 批量生成彩带
+        function addConfetti() {
+            for(let i = 0; i < 30; i++) {
+                setTimeout(createConfetti, i * 50);
+            }
+            addBalloons();
+        }
+
+        // 批量生成气球
+        function addBalloons() {
+            for(let i = 0; i < 10; i++) {
+                setTimeout(createBalloon, i * 100);
+            }
+        }
+
+        // 页面加载时自动显示一些动画
+        window.onload = function() {
+            addHearts();
+            setTimeout(addBalloons, 1000);
+        };
+    </script>
+</body>
+</html>
