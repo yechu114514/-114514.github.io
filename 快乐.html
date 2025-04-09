@@ -1,17 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>快乐星星动画</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>快乐星星动画 - 手机版</title>
     <style>
         body {
             margin: 0;
+            padding: 0;
             overflow: hidden;
-            font-family: 'Comic Sans MS', cursive, sans-serif;
+            font-family: 'Arial', sans-serif;
             touch-action: manipulation;
             background: #000;
+            -webkit-tap-highlight-color: transparent;
         }
         canvas {
             display: block;
+            width: 100%;
+            height: 100%;
         }
         #happyText {
             position: absolute;
@@ -19,9 +25,10 @@
             width: 100%;
             text-align: center;
             color: white;
-            font-size: 30px;
+            font-size: min(8vw, 30px);
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
             pointer-events: none;
+            z-index: 10;
         }
         #instructions {
             position: absolute;
@@ -29,15 +36,46 @@
             width: 100%;
             text-align: center;
             color: white;
-            font-size: 16px;
+            font-size: min(4vw, 16px);
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
             pointer-events: none;
+            z-index: 10;
+            padding: 0 10px;
+            box-sizing: border-box;
+        }
+        #mobileControls {
+            position: absolute;
+            bottom: 80px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            z-index: 10;
+        }
+        .control-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            touch-action: manipulation;
         }
     </style>
 </head>
 <body>
-    <div id="happyText">祝贝贝，天天开心!</div>
-    <div id="instructions">点击/触摸星星或拖动它们! 按空格键添加更多星星</div>
+    <div id="happyText">✨祝贝贝，天天开心✨</div>
+    <div id="instructions">触摸星星拖动它们，点击空白处添加星星</div>
+    <div id="mobileControls">
+        <button class="control-btn" id="addStar">+</button>
+        <button class="control-btn" id="changeColor">🎨</button>
+    </div>
     <canvas id="canvas"></canvas>
 
     <script>
@@ -45,30 +83,34 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const happyText = document.getElementById('happyText');
+        const addStarBtn = document.getElementById('addStar');
+        const changeColorBtn = document.getElementById('changeColor');
         
         // 设置画布大小为窗口大小
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
         
         // 星星数组
-        let stars = [];
+        let interactiveStars = [];
         
         // 创建初始星星
-        createStar(canvas.width / 2, canvas.height / 2);
-        createStar(canvas.width / 3, canvas.height / 3);
-        createStar(canvas.width * 2/3, canvas.height * 2/3);
+        createInteractiveStar(canvas.width / 2, canvas.height / 2);
+        createInteractiveStar(canvas.width / 3, canvas.height / 3);
+        createInteractiveStar(canvas.width * 2/3, canvas.height * 2/3);
         
         // 背景星星数组
         const bgStars = [];
-        for (let i = 0; i < 200; i++) {
+        for (let i = 0; i < 150; i++) {
             bgStars.push(createBackgroundStar());
         }
         
         // 交互状态
         let isDragging = false;
         let draggedStar = null;
-        let mouseX = 0;
-        let mouseY = 0;
+        let touchId = null;
         
         // 创建背景星星
         function createBackgroundStar() {
@@ -85,41 +127,38 @@
         }
         
         // 创建可交互星星
-        function createStar(x, y) {
+        function createInteractiveStar(x, y) {
             const hue = Math.random() * 360;
-            stars.push({
+            const star = {
                 x: x || Math.random() * canvas.width,
                 y: y || Math.random() * canvas.height,
-                dx: (Math.random() - 0.5) * 3,
-                dy: (Math.random() - 0.5) * 3,
+                dx: (Math.random() - 0.5) * 2,
+                dy: (Math.random() - 0.5) * 2,
                 size: 20 + Math.random() * 30,
                 points: 5 + Math.floor(Math.random() * 3) * 2, // 5, 7 或 9个角
                 rotation: Math.random() * Math.PI * 2,
-                rotationSpeed: (Math.random() - 0.5) * 0.02,
+                rotationSpeed: (Math.random() - 0.5) * 0.01,
                 color: `hsl(${hue}, 100%, 60%)`,
                 glowColor: `hsla(${hue}, 100%, 70%, 0.5)`,
                 innerColor: `hsl(${hue}, 100%, 80%)`,
                 pulseSpeed: Math.random() * 0.02 + 0.01,
                 pulseSize: 1,
-                isPulsing: true,
-                isDragged: false
-            });
+                isPulsing: true
+            };
+            interactiveStars.push(star);
+            return star;
         }
         
         // 绘制多角星
         function drawStar(x, y, radius, points, innerRadius, rotation) {
-            ctx.save();
-            ctx.translate(x, y);
-            ctx.rotate(rotation);
-            
             ctx.beginPath();
             const outerAngle = (Math.PI * 2) / points;
             const innerAngle = outerAngle / 2;
             
             for (let i = 0; i <= points; i++) {
                 // 外点
-                const outerX = Math.cos(i * outerAngle) * radius;
-                const outerY = Math.sin(i * outerAngle) * radius;
+                const outerX = x + Math.cos(i * outerAngle + rotation) * radius;
+                const outerY = y + Math.sin(i * outerAngle + rotation) * radius;
                 
                 if (i === 0) {
                     ctx.moveTo(outerX, outerY);
@@ -128,13 +167,12 @@
                 }
                 
                 // 内点
-                const innerX = Math.cos(i * outerAngle + innerAngle) * innerRadius;
-                const innerY = Math.sin(i * outerAngle + innerAngle) * innerRadius;
+                const innerX = x + Math.cos(i * outerAngle + innerAngle + rotation) * innerRadius;
+                const innerY = y + Math.sin(i * outerAngle + innerAngle + rotation) * innerRadius;
                 ctx.lineTo(innerX, innerY);
             }
             
             ctx.closePath();
-            ctx.restore();
         }
         
         // 动画循环
@@ -147,7 +185,7 @@
             drawBackgroundStars();
             
             // 更新星星位置和状态
-            updateStars();
+            updateInteractiveStars();
             
             // 绘制所有可交互星星
             drawInteractiveStars();
@@ -173,8 +211,8 @@
             });
         }
         
-        function updateStars() {
-            stars.forEach(star => {
+        function updateInteractiveStars() {
+            interactiveStars.forEach(star => {
                 // 如果不是被拖拽的状态，则更新位置
                 if (star !== draggedStar || !isDragging) {
                     star.x += star.dx;
@@ -199,7 +237,7 @@
                     star.pulseSize += star.pulseSpeed;
                     if (star.pulseSize >= 1.3 || star.pulseSize <= 0.7) {
                         star.pulseSpeed *= -1;
-                        if (star.pulseSize <= 0.7 && star.isDragged) {
+                        if (star.pulseSize <= 0.7) {
                             star.isPulsing = false;
                             star.pulseSize = 1;
                         }
@@ -209,9 +247,7 @@
         }
         
         function drawInteractiveStars() {
-            stars.forEach(star => {
-                ctx.save();
-                
+            interactiveStars.forEach(star => {
                 // 绘制发光效果
                 if (star.isPulsing) {
                     const glowRadius = star.size * star.pulseSize * 1.5;
@@ -237,8 +273,6 @@
                 ctx.fillStyle = star.innerColor;
                 drawStar(star.x, star.y, star.size * 0.6 * star.pulseSize, star.points, star.size * 0.2 * star.pulseSize, star.rotation);
                 ctx.fill();
-                
-                ctx.restore();
             });
         }
         
@@ -249,124 +283,174 @@
         
         // 检查点是否在星星内
         function isPointInStar(star, x, y) {
-            // 简化检测，使用圆形近似
             const dx = star.x - x;
             const dy = star.y - y;
             return Math.sqrt(dx * dx + dy * dy) <= star.size * 1.2;
         }
         
-        // 鼠标/触摸事件处理
-        canvas.addEventListener('mousedown', handlePointerStart);
-        canvas.addEventListener('touchstart', handlePointerStart, { passive: false });
+        // 获取触摸/鼠标位置
+        function getPointerPosition(e) {
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches ? e.touches[0] : e;
+            return {
+                x: touch.clientX - rect.left,
+                y: touch.clientY - rect.top
+            };
+        }
         
-        canvas.addEventListener('mousemove', handlePointerMove);
-        canvas.addEventListener('touchmove', handlePointerMove, { passive: false });
-        
-        canvas.addEventListener('mouseup', handlePointerEnd);
-        canvas.addEventListener('touchend', handlePointerEnd);
-        
-        canvas.addEventListener('click', handleClick);
-        
+        // 触摸/鼠标开始
         function handlePointerStart(e) {
             e.preventDefault();
-            const rect = canvas.getBoundingClientRect();
-            const x = (e.clientX || e.touches[0].clientX) - rect.left;
-            const y = (e.clientY || e.touches[0].clientY) - rect.top;
-            
-            mouseX = x;
-            mouseY = y;
+            const pos = getPointerPosition(e);
             
             // 检查是否点击了星星
-            for (let i = stars.length - 1; i >= 0; i--) {
-                if (isPointInStar(stars[i], x, y)) {
+            for (let i = interactiveStars.length - 1; i >= 0; i--) {
+                if (isPointInStar(interactiveStars[i], pos.x, pos.y)) {
                     isDragging = true;
-                    draggedStar = stars[i];
+                    draggedStar = interactiveStars[i];
                     draggedStar.isPulsing = true;
-                    draggedStar.isDragged = true;
-                    draggedStar.pulseSpeed = Math.abs(draggedStar.pulseSpeed); // 确保脉动增大
+                    draggedStar.pulseSpeed = Math.abs(draggedStar.pulseSpeed);
+                    
+                    // 对于触摸事件，记录touchId
+                    if (e.touches) {
+                        touchId = e.touches[0].identifier;
+                    }
                     break;
                 }
             }
         }
         
+        // 触摸/鼠标移动
         function handlePointerMove(e) {
+            if (!isDragging || !draggedStar) return;
             e.preventDefault();
-            const rect = canvas.getBoundingClientRect();
-            const x = (e.clientX || e.touches[0].clientX) - rect.left;
-            const y = (e.clientY || e.touches[0].clientY) - rect.top;
             
-            if (isDragging && draggedStar) {
-                draggedStar.x += x - mouseX;
-                draggedStar.y += y - mouseY;
-                
-                // 确保星星不会完全被拖出屏幕
-                draggedStar.x = Math.max(draggedStar.size, Math.min(canvas.width - draggedStar.size, draggedStar.x));
-                draggedStar.y = Math.max(draggedStar.size, Math.min(canvas.height - draggedStar.size, draggedStar.y));
+            // 对于触摸事件，确保是同一个触摸点
+            if (e.touches) {
+                let touch;
+                if (touchId !== null) {
+                    for (let i = 0; i < e.touches.length; i++) {
+                        if (e.touches[i].identifier === touchId) {
+                            touch = e.touches[i];
+                            break;
+                        }
+                    }
+                    if (!touch) return;
+                }
             }
             
-            mouseX = x;
-            mouseY = y;
+            const pos = getPointerPosition(e);
+            
+            // 计算移动距离
+            const dx = pos.x - draggedStar.x;
+            const dy = pos.y - draggedStar.y;
+            
+            // 更新星星位置
+            draggedStar.x = pos.x;
+            draggedStar.y = pos.y;
+            
+            // 如果是释放前的最后一次移动，更新速度
+            if (e.type === 'touchend' || e.type === 'touchcancel') {
+                draggedStar.dx = dx * 0.3;
+                draggedStar.dy = dy * 0.3;
+            }
         }
         
+        // 触摸/鼠标结束
         function handlePointerEnd(e) {
             if (isDragging && draggedStar) {
-                // 释放时给星星一个速度
-                const rect = canvas.getBoundingClientRect();
-                const x = (e.clientX || e.changedTouches[0].clientX) - rect.left;
-                const y = (e.clientY || e.changedTouches[0].clientY) - rect.top;
-                
-                draggedStar.dx = (x - mouseX) * 0.2;
-                draggedStar.dy = (y - mouseY) * 0.2;
+                // 如果是触摸事件且不是对应的触摸点，忽略
+                if (e.touches && touchId !== null) {
+                    let found = false;
+                    for (let i = 0; i < e.changedTouches.length; i++) {
+                        if (e.changedTouches[i].identifier === touchId) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) return;
+                }
                 
                 isDragging = false;
-                draggedStar.isDragged = false;
                 draggedStar = null;
+                touchId = null;
             }
         }
         
-        function handleClick(e) {
-            // 如果不是拖拽操作，则在点击位置创建新星星
-            if (!isDragging) {
-                const rect = canvas.getBoundingClientRect();
-                const x = (e.clientX || e.touches[0].clientX) - rect.left;
-                const y = (e.clientY || e.touches[0].clientY) - rect.top;
-                
-                // 检查是否点击了空白区域
-                let clickedOnStar = false;
-                for (const star of stars) {
-                    if (isPointInStar(star, x, y)) {
-                        clickedOnStar = true;
-                        star.isPulsing = true;
-                        star.dx *= 1.5;
-                        star.dy *= 1.5;
-                        break;
-                    }
+        // 点击添加星星
+        function handleTap(e) {
+            if (isDragging) return;
+            
+            e.preventDefault();
+            const pos = getPointerPosition(e);
+            
+            // 检查是否点击了星星
+            let clickedOnStar = false;
+            for (const star of interactiveStars) {
+                if (isPointInStar(star, pos.x, pos.y)) {
+                    clickedOnStar = true;
+                    star.isPulsing = true;
+                    star.dx *= 1.5;
+                    star.dy *= 1.5;
+                    break;
                 }
-                
-                if (!clickedOnStar) {
-                    createStar(x, y);
-                }
+            }
+            
+            if (!clickedOnStar) {
+                createInteractiveStar(pos.x, pos.y);
             }
         }
         
-        // 键盘事件 - 按空格键添加星星
-        document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space') {
-                e.preventDefault();
-                createStar(
-                    Math.random() * (canvas.width - 100) + 50,
-                    Math.random() * (canvas.height - 100) + 50
-                );
-            }
-        });
+        // 改变所有星星颜色
+        function changeAllColors() {
+            interactiveStars.forEach(star => {
+                const hue = Math.random() * 360;
+                star.color = `hsl(${hue}, 100%, 60%)`;
+                star.glowColor = `hsla(${hue}, 100%, 70%, 0.5)`;
+                star.innerColor = `hsl(${hue}, 100%, 80%)`;
+                star.isPulsing = true;
+            });
+        }
         
-        // 窗口大小改变时调整画布大小
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        });
+        // 事件监听
+        function setupEventListeners() {
+            // 鼠标事件
+            canvas.addEventListener('mousedown', handlePointerStart);
+            canvas.addEventListener('mousemove', handlePointerMove);
+            canvas.addEventListener('mouseup', handlePointerEnd);
+            canvas.addEventListener('click', handleTap);
+            
+            // 触摸事件
+            canvas.addEventListener('touchstart', handlePointerStart, { passive: false });
+            canvas.addEventListener('touchmove', handlePointerMove, { passive: false });
+            canvas.addEventListener('touchend', handlePointerEnd);
+            canvas.addEventListener('touchcancel', handlePointerEnd);
+            
+            // 移动端控制按钮
+            addStarBtn.addEventListener('click', () => {
+                createInteractiveStar();
+            });
+            
+            changeColorBtn.addEventListener('click', () => {
+                changeAllColors();
+            });
+            
+            // 键盘控制
+            document.addEventListener('keydown', (e) => {
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    createInteractiveStar();
+                }
+            });
+            
+            // 窗口大小改变
+            window.addEventListener('resize', () => {
+                resizeCanvas();
+            });
+        }
         
-        // 开始动画
+        // 初始化
+        setupEventListeners();
         animate();
     </script>
 </body>
