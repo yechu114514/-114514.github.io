@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        #gameContainer {
+            position: relative;
+            margin: 0 auto;
+            touch-action: none;
+        }
+        #mobileControls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            display: none;
+        }
+        .control-btn {
+            position: absolute;
+            opacity: 0.5;
+        }
+        @media (orientation: portrait) {
+            #rotateWarning {
+                display: block;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: black;
+                color: white;
+                text-align: center;
+                padding-top: 50%;
+                z-index: 999;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="rotateWarning">请将设备旋转至横屏模式</div>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <div id="mobileControls">
+            <img src="left.png" class="control-btn" id="leftBtn" style="left: 20px;">
+            <img src="right.png" class="control-btn" id="rightBtn" style="left: 120px;">
+            <img src="jump.png" class="control-btn" id="jumpBtn" style="right: 120px;">
+            <img src="attack.png" class="control-btn" id="attackBtn" style="right: 20px;">
+        </div>
+    </div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+// 初始化代码...
+// 完整代码需要实现以下功能模块：
+
+/* 1. 游戏对象定义 */
+class Player {
+    constructor() {
+        this.x = 100;
+        this.y = 0;
+        this.speedX = 0;
+        this.speedY = 0;
+        this.health = 10;
+        this.attackDamage = 3;
+        this.killCount = 0;
+        this.isAttacking = false;
+    }
+    // 包含移动、攻击、受伤等方法
+}
+
+/* 2. 输入控制系统 */
+const keys = {};
+// PC端键盘事件监听
+// 移动端触摸事件处理
+
+/* 3. 游戏物理系统 */
+function applyGravity() { /* ... */ }
+function handleCollisions() { /* ... */ }
+
+/* 4. 战斗系统 */
+function handleAttack() {
+    // 实现击退效果
+    if(player.isAttacking) {
+        enemies.forEach(enemy => {
+            if(checkCollision(player.attackArea, enemy)) {
+                enemy.health -= player.attackDamage;
+                enemy.x += player.facing * 50; // 击退效果
+            }
+        });
+    }
+}
+
+/* 5. BOSS战系统 */
+class XVirusBoss {
+    constructor() {
+        this.health = 100;
+        this.attackPatterns = [
+            // 定义不同攻击模式
+        ];
+    }
+    update() {
+        // 随机发射像素块攻击
+        if(Math.random() < 0.02) {
+            this.projectiles.push(new Projectile(
+                this.x, this.y,
+                Math.random() * 4 - 2,
+                Math.random() * 4 - 2
+            ));
+        }
+    }
+}
+
+/* 6. UI渲染系统 */
+function drawHealthBars() {
+    // 绘制角色和BOSS的血量条
+}
+
+/* 7. 移动端适配 */
+function setupMobileControls() {
+    // 虚拟按钮事件绑定
+    // 屏幕方向检测
+}
+
+// 游戏主循环
+function gameLoop() {
+    update();
+    render();
+    requestAnimationFrame(gameLoop);
+}
+
+// 初始化游戏
+function init() {
+    resizeCanvas();
+    loadAssets();
+    setupControls();
+    gameLoop();
+}
+
+init();
+</script>
+</body>
+</html>
