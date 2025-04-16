@@ -1,142 +1,319 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>像素骑士大作战</title>
     <style>
-        #gameContainer {
-            position: relative;
-            margin: 0 auto;
-            touch-action: none;
+        canvas {
+            border: 3px solid #2c1810;
+            background: linear-gradient(#87CEEB, #E0F6FF);
         }
-        #mobileControls {
+        body { 
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #444;
+        }
+        #gameInfo {
             position: absolute;
-            bottom: 20px;
-            width: 100%;
-            display: none;
-        }
-        .control-btn {
-            position: absolute;
-            opacity: 0.5;
-        }
-        @media (orientation: portrait) {
-            #rotateWarning {
-                display: block;
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: black;
-                color: white;
-                text-align: center;
-                padding-top: 50%;
-                z-index: 999;
-            }
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-family: Arial;
         }
     </style>
 </head>
 <body>
-    <div id="rotateWarning">请将设备旋转至横屏模式</div>
-    <div id="gameContainer">
-        <canvas id="gameCanvas"></canvas>
-        <div id="mobileControls">
-            <img src="left.png" class="control-btn" id="leftBtn" style="left: 20px;">
-            <img src="right.png" class="control-btn" id="rightBtn" style="left: 120px;">
-            <img src="jump.png" class="control-btn" id="jumpBtn" style="right: 120px;">
-            <img src="attack.png" class="control-btn" id="attackBtn" style="right: 20px;">
-        </div>
+    <div id="gameInfo">
+        <div>血量: <span id="health">10</span></div>
+        <div>攻击力: <span id="attack">3</span></div>
+        <div>击败数: <span id="kills">0</span></div>
     </div>
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
 
-<script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-// 初始化代码...
-// 完整代码需要实现以下功能模块：
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const CELL_SIZE = 16;
 
-/* 1. 游戏对象定义 */
-class Player {
-    constructor() {
-        this.x = 100;
-        this.y = 0;
-        this.speedX = 0;
-        this.speedY = 0;
-        this.health = 10;
-        this.attackDamage = 3;
-        this.killCount = 0;
-        this.isAttacking = false;
-    }
-    // 包含移动、攻击、受伤等方法
-}
+        // 游戏状态
+        const state = {
+            player: {
+                x: 100,
+                y: 300,
+                dx: 0,
+                dy: 0,
+                facing: 'right',
+                health: 10,
+                attack: 3,
+                kills: 0,
+                isAttacking: false,
+                attackFrame: 0,
+                invincible: 0
+            },
+            enemies: [],
+            projectiles: [],
+            platforms: [
+                {x: 0, y: 340, w: 800, h: 60},
+                {x: 200, y: 260, w: 100, h: 20},
+                {x: 400, y: 200, w: 100, h: 20}
+            ],
+            spawnCounter: 0
+        };
 
-/* 2. 输入控制系统 */
-const keys = {};
-// PC端键盘事件监听
-// 移动端触摸事件处理
+        // 物理常量
+        const PHYSICS = {
+            gravity: 0.8,
+            moveSpeed: 5,
+            jumpForce: -15,
+            knockback: 10
+        };
 
-/* 3. 游戏物理系统 */
-function applyGravity() { /* ... */ }
-function handleCollisions() { /* ... */ }
+        // 输入控制
+        const keys = {
+            ArrowLeft: false,
+            ArrowRight: false,
+            Space: false
+        };
 
-/* 4. 战斗系统 */
-function handleAttack() {
-    // 实现击退效果
-    if(player.isAttacking) {
-        enemies.forEach(enemy => {
-            if(checkCollision(player.attackArea, enemy)) {
-                enemy.health -= player.attackDamage;
-                enemy.x += player.facing * 50; // 击退效果
+        // 游戏实体基类
+        class Entity {
+            constructor(x, y, w, h) {
+                this.x = x;
+                this.y = y;
+                this.w = w;
+                this.h = h;
+                this.dx = 0;
+                this.dy = 0;
             }
-        });
-    }
-}
 
-/* 5. BOSS战系统 */
-class XVirusBoss {
-    constructor() {
-        this.health = 100;
-        this.attackPatterns = [
-            // 定义不同攻击模式
-        ];
-    }
-    update() {
-        // 随机发射像素块攻击
-        if(Math.random() < 0.02) {
-            this.projectiles.push(new Projectile(
-                this.x, this.y,
-                Math.random() * 4 - 2,
-                Math.random() * 4 - 2
-            ));
+            checkCollision(other) {
+                return this.x < other.x + other.w &&
+                       this.x + this.w > other.x &&
+                       this.y < other.y + other.h &&
+                       this.y + this.h > other.y;
+            }
         }
-    }
-}
 
-/* 6. UI渲染系统 */
-function drawHealthBars() {
-    // 绘制角色和BOSS的血量条
-}
+        // 玩家类
+        class Player extends Entity {
+            constructor() {
+                super(100, 300, CELL_SIZE*2, CELL_SIZE*3);
+            }
 
-/* 7. 移动端适配 */
-function setupMobileControls() {
-    // 虚拟按钮事件绑定
-    // 屏幕方向检测
-}
+            attack() {
+                if(!state.player.isAttacking) {
+                    state.player.isAttacking = true;
+                    state.player.attackFrame = 6;
+                    
+                    // 检测攻击范围内的敌人
+                    const attackArea = {
+                        x: this.facing === 'right' ? this.x + this.w : this.x - CELL_SIZE*2,
+                        y: this.y,
+                        w: CELL_SIZE*2,
+                        h: this.h
+                    };
 
-// 游戏主循环
-function gameLoop() {
-    update();
-    render();
-    requestAnimationFrame(gameLoop);
-}
+                    state.enemies.forEach(enemy => {
+                        if(this.checkCollision(enemy, attackArea)) {
+                            enemy.takeDamage(state.player.attack);
+                            enemy.applyKnockback(this.facing);
+                            if(enemy.health <= 0) {
+                                state.player.kills++;
+                                if(state.player.kills % 25 === 0 && state.player.attack < 5) {
+                                    state.player.attack++;
+                                }
+                            }
+                        }
+                    });
+                }
+            }
 
-// 初始化游戏
-function init() {
-    resizeCanvas();
-    loadAssets();
-    setupControls();
-    gameLoop();
-}
+            update() {
+                // 水平移动
+                this.dx = keys.ArrowLeft ? -PHYSICS.moveSpeed : 
+                        keys.ArrowRight ? PHYSICS.moveSpeed : 0;
+                
+                // 跳跃
+                if(keys.Space && this.isGrounded()) {
+                    this.dy = PHYSICS.jumpForce;
+                }
 
-init();
-</script>
+                // 应用物理
+                this.x += this.dx;
+                this.y += this.dy;
+                this.dy += PHYSICS.gravity;
+
+                // 平台碰撞
+                this.platformCollision();
+
+                // 更新攻击状态
+                if(state.player.isAttacking) {
+                    if(--state.player.attackFrame <= 0) {
+                        state.player.isAttacking = false;
+                    }
+                }
+
+                // 无敌时间
+                if(state.player.invincible > 0) state.player.invincible--;
+            }
+
+            isGrounded() {
+                return this.y >= 300;
+            }
+
+            platformCollision() {
+                state.platforms.forEach(plat => {
+                    if(this.checkCollision(plat)) {
+                        if(this.dy > 0) {
+                            this.dy = 0;
+                            this.y = plat.y - this.h;
+                        }
+                    }
+                });
+            }
+        }
+
+        // 敌人类
+        class Zombie extends Entity {
+            constructor(x, y) {
+                super(x, y, CELL_SIZE*1.5, CELL_SIZE*2);
+                this.health = 6;
+                this.speed = 2;
+            }
+
+            update() {
+                // 简单AI：追踪玩家
+                const px = state.player.x + state.player.w/2;
+                const diff = px - (this.x + this.w/2);
+                this.dx = Math.sign(diff) * this.speed;
+
+                this.x += this.dx;
+                this.y += this.dy;
+                this.dy += PHYSICS.gravity;
+
+                // 平台碰撞
+                state.platforms.forEach(plat => {
+                    if(this.checkCollision(plat)) {
+                        if(this.dy > 0) {
+                            this.dy = 0;
+                            this.y = plat.y - this.h;
+                        }
+                    }
+                });
+
+                // 接触伤害
+                if(this.checkCollision(state.player) && state.player.invincible === 0) {
+                    state.player.health -= 2;
+                    state.player.invincible = 60;
+                }
+            }
+
+            takeDamage(dmg) {
+                this.health -= dmg;
+            }
+
+            applyKnockback(direction) {
+                this.dx = direction === 'right' ? -PHYSICS.knockback : PHYSICS.knockback;
+            }
+        }
+
+        // 游戏初始化
+        function init() {
+            state.player = new Player();
+            
+            // 生成初始敌人
+            for(let i = 0; i < 3; i++) {
+                state.enemies.push(new Zombie(400 + i*100, 300));
+            }
+
+            gameLoop();
+        }
+
+        // 游戏循环
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // 更新游戏状态
+        function update() {
+            state.player.update();
+
+            // 更新敌人
+            state.enemies = state.enemies.filter(enemy => {
+                enemy.update();
+                return enemy.health > 0;
+            });
+
+            // 生成新敌人
+            if(++state.spawnCounter % 300 === 0) {
+                state.enemies.push(new Zombie(800, 300));
+            }
+
+            // 更新游戏信息显示
+            document.getElementById('health').textContent = state.player.health;
+            document.getElementById('attack').textContent = state.player.attack;
+            document.getElementById('kills').textContent = state.player.kills;
+        }
+
+        // 绘制游戏
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 绘制平台
+            ctx.fillStyle = '#8b4513';
+            state.platforms.forEach(plat => {
+                ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
+            });
+
+            // 绘制玩家
+            ctx.fillStyle = state.player.invincible % 10 < 5 ? '#67a3d9' : '#67a3d980';
+            ctx.fillRect(state.player.x, state.player.y, state.player.w, state.player.h);
+
+            // 绘制武器
+            if(state.player.isAttacking) {
+                ctx.fillStyle = '#cccccc';
+                const attackX = state.player.facing === 'right' ? 
+                    state.player.x + state.player.w : 
+                    state.player.x - CELL_SIZE;
+                ctx.fillRect(
+                    attackX,
+                    state.player.y + CELL_SIZE,
+                    CELL_SIZE*2, 
+                    CELL_SIZE
+                );
+            }
+
+            // 绘制敌人
+            state.enemies.forEach(enemy => {
+                ctx.fillStyle = '#6b8c21';
+                ctx.fillRect(enemy.x, enemy.y, enemy.w, enemy.h);
+                
+                // 血条
+                ctx.fillStyle = 'red';
+                ctx.fillRect(
+                    enemy.x, 
+                    enemy.y - 10, 
+                    enemy.w * (enemy.health / 6), 
+                    3
+                );
+            });
+        }
+
+        // 事件监听
+        window.addEventListener('keydown', e => {
+            if(e.code in keys) keys[e.code] = true;
+            if(e.code === 'Space') state.player.attack();
+        });
+
+        window.addEventListener('keyup', e => {
+            if(e.code in keys) keys[e.code] = false;
+        });
+
+        init();
+    </script>
 </body>
 </html>
